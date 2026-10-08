@@ -53,7 +53,7 @@ export async function POST(request) {
 
   const { SMTP_USER, SMTP_PASS } = process.env;
   if (!SMTP_USER || !SMTP_PASS) {
-    console.error('[contact] SMTP_USER / SMTP_PASS are not set — cannot send email.');
+    console.error('[contact] SMTP_USER / SMTP_PASS are not set, so email cannot be sent.');
     return Response.json(
       { error: `Our form is temporarily unavailable. Please email us at ${CONTACT_TO}.` },
       { status: 503 }
@@ -71,8 +71,8 @@ export async function POST(request) {
   const rows = [
     ['Name', data.name],
     ['Email', data.email],
-    ['Organisation', data.organisation || '—'],
-    ['I am', data.role || '—'],
+    ['Organisation', data.organisation || 'Not provided'],
+    ['I am', data.role || 'Not provided'],
   ];
 
   const text = `${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\nMessage:\n${data.message}\n`;

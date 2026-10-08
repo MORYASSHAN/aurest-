@@ -5,7 +5,7 @@ export default function VisionPath({ items }) {
   return (
     <div className="vpath">
       <Reveal className="vpath-rail" aria-hidden="true">
-        <span className="vpath-start">Phase One · today</span>
+        <span className="vpath-start">Phase One</span>
         <span className="vpath-line">
           <span className="vpath-fill" />
         </span>
@@ -15,7 +15,7 @@ export default function VisionPath({ items }) {
         {items.map((item, i) => (
           <Reveal key={item.name} delay={0.15 + i * 0.15} className="vcard-wrap">
             <article className="vcard">
-              <span className="vcard-num">Next · {String(i + 1).padStart(2, '0')}</span>
+              <span className="vcard-num">{String(i + 1).padStart(2, '0')}</span>
               <h3>{item.name}</h3>
               <p className="vcard-problem">{item.problem}</p>
               <p className="vcard-idea">{item.idea}</p>

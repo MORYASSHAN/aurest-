@@ -1,3 +1,4 @@
+import Ambient from '@/components/Ambient';
 import Nav from '@/components/Nav';
 import Hero from '@/components/Hero';
 import Story from '@/components/Story';
@@ -12,6 +13,7 @@ import Footer from '@/components/Footer';
 export default function Home() {
   return (
     <>
+      <Ambient />
       <Nav />
       <main>
         <Hero />

@@ -26,6 +26,14 @@ export default function Partners() {
                   </h3>
                   <p className="partner-org">{p.org}</p>
                   <p className="partner-text">{p.text}</p>
+                  {p.url && (
+                    <a className="partner-link" href={p.url} target="_blank" rel="noopener noreferrer">
+                      Visit website
+                      <svg viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M6 3h7v7M13 3L4 12" />
+                      </svg>
+                    </a>
+                  )}
                 </div>
               </article>
             </Reveal>

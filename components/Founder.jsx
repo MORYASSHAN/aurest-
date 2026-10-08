@@ -63,7 +63,7 @@ export default function Founder() {
 
           <Reveal as="figure" className="founder-quote" delay={0.2}>
             <blockquote>“{founder.quote}”</blockquote>
-            <figcaption>— {founder.name}</figcaption>
+            <figcaption>{founder.name}</figcaption>
           </Reveal>
 
           <Reveal delay={0.25}>

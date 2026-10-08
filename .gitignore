@@ -2,4 +2,12 @@ node_modules
 .next
 out
 dist
+.vercel
+
+# local secrets — never commit these
+.env
 .env*.local
+
+# OS / editor
+.DS_Store
+Thumbs.db

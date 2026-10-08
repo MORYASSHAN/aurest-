@@ -162,7 +162,7 @@ export default function Contact() {
                 )}
 
                 <button type="submit" className="btn btn-primary" disabled={status === 'sending'}>
-                  {status === 'sending' ? 'Sending…' : 'Send message'}
+                  {status === 'sending' ? 'Sending' : 'Send message'}
                   <svg viewBox="0 0 16 10" aria-hidden="true">
                     <path d="M1 5h13M10 1l4 4-4 4" />
                   </svg>

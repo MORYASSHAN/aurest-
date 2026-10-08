@@ -16,15 +16,30 @@ const pad = (n) => String(n).padStart(2, '0');
  */
 export default function TechExplorer({ items }) {
   const scrollerRef = useRef(null);
+  const panelRef = useRef(null);
   const [active, setActive] = useState(0);
   const [pinned, setPinned] = useState(false);
 
+  // Pin only on large screens AND when the whole panel fits on screen (below the nav)
   useEffect(() => {
     const mq = window.matchMedia(PIN_QUERY);
-    const sync = () => setPinned(mq.matches);
+    let timer = 0;
+    const sync = () => {
+      const panelHeight = panelRef.current?.offsetHeight ?? Infinity;
+      setPinned(mq.matches && panelHeight + 80 <= window.innerHeight);
+    };
+    const onResize = () => {
+      clearTimeout(timer);
+      timer = setTimeout(sync, 150);
+    };
     sync();
     mq.addEventListener('change', sync);
-    return () => mq.removeEventListener('change', sync);
+    window.addEventListener('resize', onResize);
+    return () => {
+      clearTimeout(timer);
+      mq.removeEventListener('change', sync);
+      window.removeEventListener('resize', onResize);
+    };
   }, []);
 
   useEffect(() => {
@@ -124,7 +139,7 @@ export default function TechExplorer({ items }) {
           </div>
 
           {/* Panel */}
-          <div id="tech-panel" role="tabpanel" aria-live="polite" className="explorer-panel">
+          <div ref={panelRef} id="tech-panel" role="tabpanel" aria-live="polite" className="explorer-panel">
             <div key={tech.id} className="panel-inner">
               <div className="panel-visual">
                 <span className="panel-index" aria-hidden="true">

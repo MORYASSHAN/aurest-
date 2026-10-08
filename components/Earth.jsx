@@ -31,7 +31,9 @@ const Earth = forwardRef(function Earth({ onLayout }, ref) {
 
     // ---- Renderer, scene, camera ----
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // Lighter rendering on small screens keeps phones smooth and cool
+    const maxDpr = window.innerWidth < 768 ? 1.5 : 2;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxDpr));
     renderer.setClearColor(0x000000, 0);
     mount.appendChild(renderer.domElement);
 
@@ -92,8 +94,9 @@ const Earth = forwardRef(function Earth({ onLayout }, ref) {
       camera.bottom = -1;
       camera.updateProjectionMatrix();
 
-      const radius = Math.max(aspect * 1.35, 1.1);
-      const horizonY = aspect > 1 ? -0.08 : -0.2;
+      const radius = Math.max(aspect * 1.55, 1.25);
+      // horizon sits about two-thirds down, leaving the sky above for the headline
+      const horizonY = aspect > 1 ? -0.36 : -0.34;
       earth.scale.setScalar(radius);
       atmosphere.scale.setScalar(radius);
       earth.position.y = atmosphere.position.y = horizonY - radius;
@@ -109,7 +112,7 @@ const Earth = forwardRef(function Earth({ onLayout }, ref) {
     const tick = () => {
       const t = clock.getElapsedTime();
       earthMat.uniforms.time.value = t;
-      earth.rotation.y = BASE_LON + Math.sin(t * 0.04) * 0.12; // gentle drift
+      earth.rotation.y = BASE_LON + t * 0.03; // slow, visible spin
       renderer.render(scene, camera);
     };
     renderer.setAnimationLoop(tick);

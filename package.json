@@ -5,8 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "next start"
+  },
+  "engines": {
+    "node": ">=18.18.0"
   },
   "dependencies": {
     "next": "^15.3.0",
