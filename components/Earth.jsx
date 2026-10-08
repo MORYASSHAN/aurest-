@@ -96,7 +96,7 @@ const Earth = forwardRef(function Earth({ onLayout }, ref) {
 
       const radius = Math.max(aspect * 1.55, 1.25);
       // horizon sits about two-thirds down, leaving the sky above for the headline
-      const horizonY = aspect > 1 ? -0.36 : -0.34;
+      const horizonY = aspect > 1 ? -0.2 : -0.24;
       earth.scale.setScalar(radius);
       atmosphere.scale.setScalar(radius);
       earth.position.y = atmosphere.position.y = horizonY - radius;

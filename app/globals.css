@@ -2853,7 +2853,7 @@ main,
 }
 .hero-content {
   /* clears the menu at the top and keeps a calm gap above the Earth */
-  padding: calc(84px + 2vh) 20px 6vh;
+  padding: calc(76px + 1vh) 20px 5vh;
 }
 .brand {
   margin-right: -0.3em;
