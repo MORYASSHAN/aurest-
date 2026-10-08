@@ -55,7 +55,7 @@ export async function POST(request) {
   if (!SMTP_USER || !SMTP_PASS) {
     console.error('[contact] SMTP_USER / SMTP_PASS are not set, so email cannot be sent.');
     return Response.json(
-      { error: `Our form is temporarily unavailable. Please email us at ${CONTACT_TO}.` },
+      { error: 'Our website form is not connected to email yet.', fallback: true },
       { status: 503 }
     );
   }
@@ -104,7 +104,7 @@ export async function POST(request) {
   } catch (err) {
     console.error('[contact] sendMail failed:', err);
     return Response.json(
-      { error: `We couldn't send your message right now. Please email us at ${CONTACT_TO}.` },
+      { error: "We couldn't send your message from the website right now.", fallback: true },
       { status: 502 }
     );
   }

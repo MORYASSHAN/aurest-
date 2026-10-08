@@ -7,18 +7,33 @@ import { contact } from '@/lib/content';
 
 const EMPTY = { name: '', email: '', organisation: '', role: '', message: '', website: '' };
 
+// The same message, ready to send from the visitor's own email app
+function mailtoFor(form) {
+  const subject = `Enquiry from ${form.name}${form.role ? ` (${form.role})` : ''}`;
+  const signature = [form.name, form.email, form.organisation].filter(Boolean).join('\n');
+  const body = `${form.message}\n\n--\n${signature}`;
+  return `mailto:${contact.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 export default function Contact() {
   const [form, setForm] = useState(EMPTY);
   const [status, setStatus] = useState('idle'); // idle | sending | sent | error
   const [error, setError] = useState('');
+  const [fallback, setFallback] = useState(''); // mailto link when the website can't send
 
-  const update = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
+  const update = (field) => (e) => {
+    setForm((f) => ({ ...f, [field]: e.target.value }));
+    // any edit makes the prepared email out of date, so go back to a normal send
+    setFallback('');
+    setStatus((s) => (s === 'error' ? 'idle' : s));
+  };
   const pickAudience = (title) => setForm((f) => ({ ...f, role: f.role === title ? '' : title }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus('sending');
     setError('');
+    setFallback('');
     try {
       const res = await fetch('/api/contact', {
         method: 'POST',
@@ -26,7 +41,10 @@ export default function Contact() {
         body: JSON.stringify(form),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
+      if (!res.ok) {
+        if (data.fallback) setFallback(mailtoFor(form));
+        throw new Error(data.error || 'Something went wrong. Please try again.');
+      }
       setStatus('sent');
       setForm(EMPTY);
     } catch (err) {
@@ -155,14 +173,32 @@ export default function Contact() {
                   <input tabIndex={-1} autoComplete="off" name="website" value={form.website} onChange={update('website')} />
                 </label>
 
-                {status === 'error' && (
+                {status === 'error' && !fallback && (
                   <p className="form-error" role="alert">
                     {error}
                   </p>
                 )}
 
-                <button type="submit" className="btn btn-primary" disabled={status === 'sending'}>
-                  {status === 'sending' ? 'Sending' : 'Send message'}
+                {status === 'error' && fallback && (
+                  <div className="form-fallback" role="alert">
+                    <p>
+                      <strong>{error}</strong> Your message is ready to send from your own email app instead.
+                    </p>
+                    <a className="btn btn-primary" href={fallback}>
+                      Open in email app
+                    </a>
+                    <span>
+                      or write to <a href={`mailto:${contact.email}`}>{contact.email}</a>
+                    </span>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  className={fallback ? 'btn btn-ghost' : 'btn btn-primary'}
+                  disabled={status === 'sending'}
+                >
+                  {status === 'sending' ? 'Sending' : fallback ? 'Try sending again' : 'Send message'}
                   <svg viewBox="0 0 16 10" aria-hidden="true">
                     <path d="M1 5h13M10 1l4 4-4 4" />
                   </svg>
