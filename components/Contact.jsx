@@ -102,6 +102,22 @@ export default function Contact() {
                   Priyanshu Sharma
                 </a>
               </li>
+              {contact.x && (
+                <li>
+                  <span>X</span>
+                  <a href={contact.x} target="_blank" rel="noopener noreferrer">
+                    @itzpriyn
+                  </a>
+                </li>
+              )}
+              {contact.youtube && (
+                <li>
+                  <span>YouTube</span>
+                  <a href={contact.youtube} target="_blank" rel="noopener noreferrer">
+                    @founderpriyanshu
+                  </a>
+                </li>
+              )}
             </Reveal>
           </div>
 
