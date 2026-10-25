@@ -13,6 +13,7 @@ import {
   BackSide,
   Clock,
   MathUtils,
+  RepeatWrapping,
 } from 'three';
 import {
   earthVertex,
@@ -38,6 +39,10 @@ const Earth = forwardRef(function Earth({ onLayout }, ref) {
   onLayoutRef.current = onLayout;
 
   useEffect(() => {
+    let mounted = true;
+    let fallbackDayMap = null;
+    let fallbackCloudMap = null;
+
     const mount = mountRef.current;
     if (!mount) return;
 
@@ -65,6 +70,12 @@ const Earth = forwardRef(function Earth({ onLayout }, ref) {
     };
     const onContextRestored = () => {
       isContextLost = false;
+      if (earthMat) {
+        earthMat.needsUpdate = true;
+        if (earthMat.uniforms.dayMap.value) earthMat.uniforms.dayMap.value.needsUpdate = true;
+        if (earthMat.uniforms.cloudMap.value) earthMat.uniforms.cloudMap.value.needsUpdate = true;
+      }
+      if (atmoMat) atmoMat.needsUpdate = true;
       updateLoop();
     };
     canvas.addEventListener('webglcontextlost', onContextLost, false);
@@ -75,32 +86,65 @@ const Earth = forwardRef(function Earth({ onLayout }, ref) {
     const camera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
     camera.position.set(0, 0, 10);
 
+    // Single static render helper
+    const renderFrame = () => {
+      if (!isContextLost) {
+        renderer.render(scene, camera);
+      }
+    };
+
     // ---- Textures with automatic JPG/PNG fallback ----
     const loader = new TextureLoader();
     loader.setCrossOrigin('anonymous');
 
     const dayMap = loader.load(
       `${TEXTURE_BASE}earth_atmos_2048.webp`,
-      undefined,
+      () => {
+        renderFrame();
+      },
       undefined,
       () => {
         loader.load(`${TEXTURE_BASE}earth_atmos_2048.jpg`, (tex) => {
-          if (earthMat) earthMat.uniforms.dayMap.value = tex;
+          if (!mounted) {
+            tex.dispose();
+            return;
+          }
+          fallbackDayMap = tex;
+          tex.anisotropy = anisotropy;
+          if (earthMat) {
+            earthMat.uniforms.dayMap.value = tex;
+            earthMat.needsUpdate = true;
+            renderFrame();
+          }
         });
       }
     );
 
     const cloudMap = loader.load(
       `${TEXTURE_BASE}earth_clouds_1024.webp`,
-      undefined,
+      () => {
+        renderFrame();
+      },
       undefined,
       () => {
         loader.load(`${TEXTURE_BASE}earth_clouds_1024.png`, (tex) => {
-          if (earthMat) earthMat.uniforms.cloudMap.value = tex;
+          if (!mounted) {
+            tex.dispose();
+            return;
+          }
+          fallbackCloudMap = tex;
+          tex.wrapS = RepeatWrapping;
+          tex.anisotropy = anisotropy;
+          if (earthMat) {
+            earthMat.uniforms.cloudMap.value = tex;
+            earthMat.needsUpdate = true;
+            renderFrame();
+          }
         });
       }
     );
 
+    cloudMap.wrapS = RepeatWrapping;
     const anisotropy = renderer.capabilities.getMaxAnisotropy();
     dayMap.anisotropy = anisotropy;
     cloudMap.anisotropy = anisotropy;
@@ -141,6 +185,8 @@ const Earth = forwardRef(function Earth({ onLayout }, ref) {
       if (!w || !h) return;
       const aspect = w / h;
 
+      const currentMaxDpr = window.innerWidth < 768 ? 1.5 : 2;
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, currentMaxDpr));
       renderer.setSize(w, h, false);
       camera.left = -aspect;
       camera.right = aspect;
@@ -173,21 +219,27 @@ const Earth = forwardRef(function Earth({ onLayout }, ref) {
       renderer.render(scene, camera);
     };
 
-    if (reduceMotion) {
-      renderer.render(scene, camera);
-    } else {
-      renderer.setAnimationLoop(tick);
-    }
-
-    // Pause rendering while the globe is off-screen or tab is hidden
-    let isVisible = true;
+    // Controlled loop management: pause when offscreen, tab hidden, or motion reduced
+    let isVisible = false;
     const updateLoop = () => {
-      if (reduceMotion || isContextLost) return;
+      if (reduceMotion || isContextLost) {
+        renderer.setAnimationLoop(null);
+        renderer.render(scene, camera);
+        return;
+      }
+      const shouldRun = isVisible && !document.hidden;
       renderer.setAnimationLoop(isVisible && !document.hidden ? tick : null);
+      if (!shouldRun) {
+        renderer.render(scene, camera);
+      }
     };
 
+    if (reduceMotion) {
+      renderer.render(scene, camera);
+    }
+
     const visibility = new IntersectionObserver(([entry]) => {
-      isVisible = entry.isIntersecting;
+      isVisible = Boolean(entry && entry.isIntersecting);
       updateLoop();
     });
     visibility.observe(mount);
@@ -199,6 +251,7 @@ const Earth = forwardRef(function Earth({ onLayout }, ref) {
 
     // ---- Cleanup ----
     return () => {
+      mounted = false;
       document.removeEventListener('visibilitychange', onVisibilityChange);
       visibility.disconnect();
       resizeObserver.disconnect();
@@ -211,6 +264,8 @@ const Earth = forwardRef(function Earth({ onLayout }, ref) {
       atmoMat.dispose();
       dayMap.dispose();
       cloudMap.dispose();
+      if (fallbackDayMap) fallbackDayMap.dispose();
+      if (fallbackCloudMap) fallbackCloudMap.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
       if (canvas.parentNode) {

@@ -70,6 +70,8 @@ async function main() {
       { path: '/textures/earth_clouds_1024.png', expectStatus: 200, expectLen: 260222 },
       { path: '/icon.svg', expectStatus: 200 },
       { path: '/manifest.webmanifest', expectStatus: 200 },
+      { path: '/robots.txt', expectStatus: 200 },
+      { path: '/sitemap.xml', expectStatus: 200 },
       { path: '/images/ghost_asset.webp', expectStatus: 404 }
     ];
 

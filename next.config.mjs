@@ -61,7 +61,7 @@ const nextConfig = {
         ],
       },
       {
-        source: '/(icon.svg|apple-icon.png|manifest.webmanifest|favicon.ico)',
+        source: '/(icon.svg|apple-icon.png|manifest.webmanifest|favicon.ico|robots.txt|sitemap.xml)',
         headers: [
           {
             key: 'Cache-Control',

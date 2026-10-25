@@ -230,4 +230,71 @@ describe('F6, F7 & F8 Security & API Boundary Cases', () => {
     const body = await res.json();
     expect(body.error).toContain('Invalid request body');
   });
+
+  it('TC-F8-B06: Chunked payload without Content-Length header exceeding 64KB triggers 413 Payload Too Large', async () => {
+    const { POST } = await import(routeUrl);
+
+    // Create a 70 KB payload without Content-Length header
+    const largeMessage = 'x'.repeat(70000);
+    const req = new Request('http://localhost:3000/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Chunked Test',
+        email: 'chunked@example.com',
+        message: largeMessage,
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(413);
+    const body = await res.json();
+    expect(body.error).toContain('Payload too large');
+  });
+
+  it('TC-F8-B07: Reverse proxy with X-Forwarded-Host matching Origin is accepted', async () => {
+    const { POST } = await import(routeUrl);
+
+    const req = new Request('http://localhost:3000/api/contact', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: 'https://aurest.vercel.app',
+        Host: '127.0.0.1:3000',
+        'X-Forwarded-Host': 'aurest.vercel.app',
+      },
+      body: JSON.stringify({
+        name: 'Vercel User',
+        email: 'user@aurest.com',
+        message: 'Hello from production proxy',
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).not.toBe(403);
+  });
+
+  it('TC-F8-B08: Reverse proxy with spoofed/mismatched Origin triggers 403 Forbidden', async () => {
+    const { POST } = await import(routeUrl);
+
+    const req = new Request('http://localhost:3000/api/contact', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: 'https://malicious-attacker.com',
+        Host: '127.0.0.1:3000',
+        'X-Forwarded-Host': 'aurest.vercel.app',
+      },
+      body: JSON.stringify({
+        name: 'Attacker',
+        email: 'attacker@evil.com',
+        message: 'Exploit attempt',
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.error).toContain('Forbidden cross-origin');
+  });
 });

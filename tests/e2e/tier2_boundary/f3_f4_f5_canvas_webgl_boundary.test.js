@@ -155,4 +155,34 @@ describe('F3, F4 & F5 Canvas & WebGL Boundary Cases', () => {
     expect(earthContent).toContain('renderer.forceContextLoss()');
     expect(earthContent).toContain('renderer.dispose()');
   });
+
+  it('TC-F5-B06: Earth.jsx configures RepeatWrapping on cloudMap to prevent texture coordinate clamping', () => {
+    expect(earthContent).toContain('RepeatWrapping');
+    expect(earthContent).toContain('cloudMap.wrapS = RepeatWrapping');
+  });
+
+  it('TC-F5-B07: Earth.jsx disposes of fallback day and cloud textures on unmount', () => {
+    expect(earthContent).toContain('fallbackDayMap.dispose()');
+    expect(earthContent).toContain('fallbackCloudMap.dispose()');
+  });
+
+  it('TC-F5-B08: Earth.jsx triggers needsUpdate on materials and textures during context restoration recovery', () => {
+    expect(earthContent).toContain('earthMat.needsUpdate = true');
+    expect(earthContent).toContain('earthMat.uniforms.dayMap.value.needsUpdate = true');
+  });
+
+  it('TC-F4-B06: Ambient.jsx resets 3D tilt custom properties when pointer leaves tiltable cards', () => {
+    expect(ambientContent).toContain('resetTilt');
+    expect(ambientContent).toContain("el.style.setProperty('--ry', '0deg')");
+    expect(ambientContent).toContain("el.style.setProperty('--rx', '0deg')");
+    expect(ambientContent).toContain("window.addEventListener('pointerleave'");
+  });
+
+  it('TC-F4-B07: FeatureCard coalesces pointermove spotlight calculation to requestAnimationFrame', () => {
+    const cardPath = path.join(rootDir, 'components', 'FeatureCard.jsx');
+    const cardContent = fs.readFileSync(cardPath, 'utf8');
+    expect(cardContent).toContain('frameRef.current');
+    expect(cardContent).toContain('requestAnimationFrame');
+    expect(cardContent).toContain('cancelAnimationFrame');
+  });
 });

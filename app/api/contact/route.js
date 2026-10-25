@@ -65,7 +65,7 @@ export async function POST(request) {
 
   // Verify origin for CSRF defense if present
   const origin = request.headers.get('origin');
-  const host = request.headers.get('host');
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
   if (origin && host) {
     try {
       const originHost = new URL(origin).host;
@@ -79,7 +79,11 @@ export async function POST(request) {
 
   let body;
   try {
-    body = await request.json();
+    const rawText = await request.text();
+    if (rawText.length > MAX_PAYLOAD_BYTES) {
+      return jsonResponse({ error: 'Payload too large.' }, 413);
+    }
+    body = JSON.parse(rawText);
   } catch {
     return jsonResponse({ error: 'Invalid request body.' }, 400);
   }
