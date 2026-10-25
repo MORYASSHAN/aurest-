@@ -125,11 +125,15 @@ export default function Ambient() {
         needsFullClear = false;
       } else {
         const pad = RADIUS + 26;
-        const minX = Math.max(0, Math.floor(Math.min(prevPos.x, pos.x) - pad));
-        const minY = Math.max(0, Math.floor(Math.min(prevPos.y, pos.y) - pad));
-        const maxX = Math.min(w, Math.ceil(Math.max(prevPos.x, pos.x) + pad));
-        const maxY = Math.min(h, Math.ceil(Math.max(prevPos.y, pos.y) + pad));
-        ctx.clearRect(minX, minY, maxX - minX, maxY - minY);
+        const minX = Math.max(0, Math.min(w, Math.floor(Math.min(prevPos.x, pos.x) - pad)));
+        const minY = Math.max(0, Math.min(h, Math.floor(Math.min(prevPos.y, pos.y) - pad)));
+        const maxX = Math.max(0, Math.min(w, Math.ceil(Math.max(prevPos.x, pos.x) + pad)));
+        const maxY = Math.max(0, Math.min(h, Math.ceil(Math.max(prevPos.y, pos.y) + pad)));
+        const clearW = maxX - minX;
+        const clearH = maxY - minY;
+        if (clearW > 0 && clearH > 0) {
+          ctx.clearRect(minX, minY, clearW, clearH);
+        }
       }
       prevPos.x = pos.x;
       prevPos.y = pos.y;
