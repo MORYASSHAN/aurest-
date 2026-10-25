@@ -2,10 +2,12 @@
   "name": "aurest",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "node run-all-tests.mjs"
   },
   "engines": {
     "node": ">=18.18.0"

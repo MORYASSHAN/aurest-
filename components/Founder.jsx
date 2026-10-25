@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import Reveal from './Reveal';
 import { founder } from '@/lib/content';
 
@@ -46,9 +47,8 @@ export default function Founder() {
       <div className="container founder">
         <Reveal className="founder-photo">
           {photoOk ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={founder.photo}
+            <Image
+              src={founder.photo || '/images/founder.webp'}
               alt={`Portrait of ${founder.name}`}
               width={400}
               height={400}

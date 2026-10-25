@@ -117,6 +117,7 @@ export default function Ambient() {
           const e = f * f * (3 - 2 * f); // smooth falloff
           const wave = 0.6 + 0.4 * Math.sin(d * 0.045 - t * 0.0035);
           const a = e * wave * strength;
+          if (a < 0.01) continue; // skip imperceptible outer cells to minimize GPU rasterization
 
           hexPath(ctx, cx, cy, HEX - 2);
           // soft wide stroke + thin stroke = a gentle blue glow
@@ -150,6 +151,19 @@ export default function Ambient() {
       drawHoneycomb(t);
     };
 
+    let pendingTilt = null;
+    let tiltFrame = 0;
+    const applyTilt = () => {
+      tiltFrame = 0;
+      if (!pendingTilt) return;
+      const { el, clientX, clientY } = pendingTilt;
+      const r = el.getBoundingClientRect();
+      const px = (clientX - r.left) / r.width - 0.5;
+      const py = (clientY - r.top) / r.height - 0.5;
+      el.style.setProperty('--ry', `${(px * MAX_TILT * 2).toFixed(2)}deg`);
+      el.style.setProperty('--rx', `${(-py * MAX_TILT * 2).toFixed(2)}deg`);
+    };
+
     const onPointerMove = (e) => {
       if (e.pointerType === 'mouse' || e.pointerType === 'pen') {
         target.x = e.clientX;
@@ -157,19 +171,18 @@ export default function Ambient() {
         lastMove = performance.now();
       }
 
-      // 3D tilt for cards under the cursor
+      // 3D tilt for cards under the cursor - coalesced to RAF to eliminate mouse polling jank
       if (!finePointer) return;
       const el = e.target instanceof Element ? e.target.closest(TILT_SELECTOR) : null;
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      const px = (e.clientX - r.left) / r.width - 0.5;
-      const py = (e.clientY - r.top) / r.height - 0.5;
-      el.style.setProperty('--ry', `${(px * MAX_TILT * 2).toFixed(2)}deg`);
-      el.style.setProperty('--rx', `${(-py * MAX_TILT * 2).toFixed(2)}deg`);
+      if (el) {
+        pendingTilt = { el, clientX: e.clientX, clientY: e.clientY };
+        if (!tiltFrame) tiltFrame = requestAnimationFrame(applyTilt);
+      }
     };
 
     const onVisibility = () => {
       cancelAnimationFrame(frame);
+      if (tiltFrame) cancelAnimationFrame(tiltFrame);
       if (!document.hidden) frame = requestAnimationFrame(loop);
     };
 
@@ -179,6 +192,7 @@ export default function Ambient() {
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
       cancelAnimationFrame(frame);
+      if (tiltFrame) cancelAnimationFrame(tiltFrame);
       window.removeEventListener('resize', resize);
       window.removeEventListener('pointermove', onPointerMove);
       document.removeEventListener('visibilitychange', onVisibility);

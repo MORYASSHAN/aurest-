@@ -1,7 +1,19 @@
 'use client';
 
 import { forwardRef, useEffect, useRef } from 'react';
-import * as THREE from 'three';
+import {
+  WebGLRenderer,
+  Scene,
+  OrthographicCamera,
+  TextureLoader,
+  ShaderMaterial,
+  SphereGeometry,
+  Mesh,
+  Vector3,
+  BackSide,
+  Clock,
+  MathUtils,
+} from 'three';
 import {
   earthVertex,
   earthFragment,
@@ -12,8 +24,8 @@ import {
 const TEXTURE_BASE = '/textures/';
 
 // Atlantic / Europe / Africa facing the viewer, north tilted toward the horizon
-const BASE_LON = -Math.PI / 2 - THREE.MathUtils.degToRad(2);
-const TILT = THREE.MathUtils.degToRad(-12);
+const BASE_LON = -Math.PI / 2 - MathUtils.degToRad(2);
+const TILT = MathUtils.degToRad(-12);
 
 /**
  * Half-Earth rendered with three.js.
@@ -30,54 +42,96 @@ const Earth = forwardRef(function Earth({ onLayout }, ref) {
     if (!mount) return;
 
     // ---- Renderer, scene, camera ----
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new WebGLRenderer({
+      antialias: true,
+      alpha: true,
+      powerPreference: 'high-performance',
+    });
+
     // Lighter rendering on small screens keeps phones smooth and cool
     const maxDpr = window.innerWidth < 768 ? 1.5 : 2;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxDpr));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
     renderer.setClearColor(0x000000, 0);
-    mount.appendChild(renderer.domElement);
 
-    const scene = new THREE.Scene();
+    const canvas = renderer.domElement;
+    mount.appendChild(canvas);
+
+    // Guard against WebGL context crashes
+    let isContextLost = false;
+    const onContextLost = (e) => {
+      e.preventDefault();
+      isContextLost = true;
+      renderer.setAnimationLoop(null);
+    };
+    const onContextRestored = () => {
+      isContextLost = false;
+      updateLoop();
+    };
+    canvas.addEventListener('webglcontextlost', onContextLost, false);
+    canvas.addEventListener('webglcontextrestored', onContextRestored, false);
+
+    const scene = new Scene();
     // Orthographic camera keeps the horizon a clean, wide arc
-    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
     camera.position.set(0, 0, 10);
 
-    // ---- Textures ----
-    const loader = new THREE.TextureLoader();
+    // ---- Textures with automatic JPG/PNG fallback ----
+    const loader = new TextureLoader();
     loader.setCrossOrigin('anonymous');
-    const dayMap = loader.load(`${TEXTURE_BASE}earth_atmos_2048.webp`);
-    const cloudMap = loader.load(`${TEXTURE_BASE}earth_clouds_1024.webp`);
+
+    const dayMap = loader.load(
+      `${TEXTURE_BASE}earth_atmos_2048.webp`,
+      undefined,
+      undefined,
+      () => {
+        loader.load(`${TEXTURE_BASE}earth_atmos_2048.jpg`, (tex) => {
+          if (earthMat) earthMat.uniforms.dayMap.value = tex;
+        });
+      }
+    );
+
+    const cloudMap = loader.load(
+      `${TEXTURE_BASE}earth_clouds_1024.webp`,
+      undefined,
+      undefined,
+      () => {
+        loader.load(`${TEXTURE_BASE}earth_clouds_1024.png`, (tex) => {
+          if (earthMat) earthMat.uniforms.cloudMap.value = tex;
+        });
+      }
+    );
+
     const anisotropy = renderer.capabilities.getMaxAnisotropy();
     dayMap.anisotropy = anisotropy;
     cloudMap.anisotropy = anisotropy;
 
     // ---- Earth ----
-    const earthMat = new THREE.ShaderMaterial({
+    const earthMat = new ShaderMaterial({
       uniforms: {
         dayMap: { value: dayMap },
         cloudMap: { value: cloudMap },
-        sunDir: { value: new THREE.Vector3(-0.55, 0.55, 0.65).normalize() },
+        sunDir: { value: new Vector3(-0.55, 0.55, 0.65).normalize() },
         time: { value: 0 },
       },
       vertexShader: earthVertex,
       fragmentShader: earthFragment,
     });
-    const earthGeo = new THREE.SphereGeometry(1, 96, 96);
-    const earth = new THREE.Mesh(earthGeo, earthMat);
+    const earthGeo = new SphereGeometry(1, 96, 96);
+    const earth = new Mesh(earthGeo, earthMat);
     earth.rotation.order = 'XYZ';
     earth.rotation.x = TILT;
     scene.add(earth);
 
     // ---- Atmosphere halo ----
-    const atmoMat = new THREE.ShaderMaterial({
+    const atmoMat = new ShaderMaterial({
       transparent: true,
       depthWrite: false,
-      side: THREE.BackSide,
+      side: BackSide,
       vertexShader: atmosphereVertex,
       fragmentShader: atmosphereFragment,
     });
-    const atmoGeo = new THREE.SphereGeometry(1.045, 96, 96);
-    const atmosphere = new THREE.Mesh(atmoGeo, atmoMat);
+    const atmoGeo = new SphereGeometry(1.045, 96, 96);
+    const atmosphere = new Mesh(atmoGeo, atmoMat);
     scene.add(atmosphere);
 
     // ---- Layout: Earth wider than the screen, horizon just below the middle ----
@@ -108,18 +162,27 @@ const Earth = forwardRef(function Earth({ onLayout }, ref) {
     resizeObserver.observe(mount);
 
     // ---- Animation loop ----
-    const clock = new THREE.Clock();
+    const clock = new Clock();
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     const tick = () => {
+      if (isContextLost) return;
       const t = clock.getElapsedTime();
       earthMat.uniforms.time.value = t;
       earth.rotation.y = BASE_LON + t * 0.03; // slow, visible spin
       renderer.render(scene, camera);
     };
-    renderer.setAnimationLoop(tick);
+
+    if (reduceMotion) {
+      renderer.render(scene, camera);
+    } else {
+      renderer.setAnimationLoop(tick);
+    }
 
     // Pause rendering while the globe is off-screen or tab is hidden
     let isVisible = true;
     const updateLoop = () => {
+      if (reduceMotion || isContextLost) return;
       renderer.setAnimationLoop(isVisible && !document.hidden ? tick : null);
     };
 
@@ -139,6 +202,8 @@ const Earth = forwardRef(function Earth({ onLayout }, ref) {
       document.removeEventListener('visibilitychange', onVisibilityChange);
       visibility.disconnect();
       resizeObserver.disconnect();
+      canvas.removeEventListener('webglcontextlost', onContextLost);
+      canvas.removeEventListener('webglcontextrestored', onContextRestored);
       renderer.setAnimationLoop(null);
       earthGeo.dispose();
       atmoGeo.dispose();
@@ -147,7 +212,10 @@ const Earth = forwardRef(function Earth({ onLayout }, ref) {
       dayMap.dispose();
       cloudMap.dispose();
       renderer.dispose();
-      mount.removeChild(renderer.domElement);
+      renderer.forceContextLoss();
+      if (canvas.parentNode) {
+        canvas.parentNode.removeChild(canvas);
+      }
     };
   }, []);
 

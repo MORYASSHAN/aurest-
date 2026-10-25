@@ -108,7 +108,8 @@ button {
   pointer-events: none;
 }
 
-.earth {
+.earth,
+.earth-parallax {
   position: absolute;
   inset: 0;
   will-change: transform;

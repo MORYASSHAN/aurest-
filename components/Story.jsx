@@ -9,6 +9,10 @@ const FEATURES = [
     image: {
       src: '/images/stop.webp',
       alt: 'Red blood cells trapped in a tight biopolymer fibrin clot mesh',
+      width: 1376,
+      height: 768,
+      loading: 'lazy',
+      decoding: 'async',
     },
   },
   {
@@ -18,6 +22,10 @@ const FEATURES = [
     image: {
       src: '/images/neutralize.webp',
       alt: 'Disarming lethal venom toxins directly at the bite site',
+      width: 1376,
+      height: 768,
+      loading: 'lazy',
+      decoding: 'async',
     },
   },
   {
@@ -27,6 +35,10 @@ const FEATURES = [
     image: {
       src: '/images/preserve.webp',
       alt: 'Vitrification platforms that protect biologics without cold chain',
+      width: 1376,
+      height: 768,
+      loading: 'lazy',
+      decoding: 'async',
     },
   },
 ];

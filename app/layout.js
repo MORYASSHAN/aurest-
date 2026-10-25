@@ -3,13 +3,13 @@ import './globals.css';
 
 const manrope = Manrope({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
   display: 'swap',
   variable: '--font-manrope',
+  fallback: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+  adjustFontFallback: true,
 });
 
 // Public URL used for absolute links in social previews.
-// Set NEXT_PUBLIC_SITE_URL in Vercel once you have a custom domain; otherwise Vercel's URL is used.
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ||
   (process.env.VERCEL_PROJECT_PRODUCTION_URL && `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`) ||
@@ -30,36 +30,73 @@ export const metadata = {
     'biotechnology',
     'hemostatic',
     'V Seal',
+    'Venom Seal',
+    'Aurest Kage',
     'drug delivery',
     'Jaipur',
     'MNIT',
     'deep-tech',
   ],
+  authors: [{ name: 'Priyanshu Sharma', url: siteUrl }],
+  creator: 'Priyanshu Sharma',
+  publisher: 'Aurest Biotech Pvt. Ltd.',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
     type: 'website',
     siteName: 'Aurest Biotech',
     title: 'Aurest Biotech',
     description,
     locale: 'en_IN',
+    url: siteUrl,
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Aurest Biotech',
     description,
+    creator: '@itzpriyn',
   },
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
+  manifest: '/manifest.webmanifest',
 };
 
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
   themeColor: '#e2eefa',
-  viewportFit: 'cover', // lets the page use the full screen on notched phones
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={manrope.variable}>
+      <head>
+        <link
+          rel="preload"
+          href="/textures/earth_atmos_2048.webp"
+          as="image"
+          type="image/webp"
+          fetchPriority="high"
+        />
+      </head>
       <body>{children}</body>
     </html>
   );
 }
+
