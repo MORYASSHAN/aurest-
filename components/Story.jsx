@@ -7,7 +7,7 @@ const FEATURES = [
     title: 'STOP',
     text: 'Next-generation hemostatic technologies.',
     image: {
-      src: '/images/stop.jpg',
+      src: '/images/stop.webp',
       alt: 'Red blood cells trapped in a tight biopolymer fibrin clot mesh',
     },
   },
@@ -16,7 +16,7 @@ const FEATURES = [
     title: 'NEUTRALIZE',
     text: 'Disarming lethal venom toxins directly at the bite site.',
     image: {
-      src: '/images/neutralize.jpg',
+      src: '/images/neutralize.webp',
       alt: 'Disarming lethal venom toxins directly at the bite site',
     },
   },
@@ -25,7 +25,7 @@ const FEATURES = [
     title: 'PRESERVE',
     text: 'Vitrification platforms that protect biologics without cold chain.',
     image: {
-      src: '/images/preserve.jpg',
+      src: '/images/preserve.webp',
       alt: 'Vitrification platforms that protect biologics without cold chain',
     },
   },

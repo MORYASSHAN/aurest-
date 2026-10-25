@@ -3,6 +3,7 @@ node_modules
 out
 dist
 .vercel
+.agents
 
 # local secrets — never commit these
 .env

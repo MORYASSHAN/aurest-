@@ -55,6 +55,7 @@ export default function Ambient() {
     let w = 0;
     let h = 0;
     let half = 320; // half the glow size, read from CSS
+    let needsFullClear = true;
     const resize = () => {
       w = window.innerWidth;
       h = window.innerHeight;
@@ -62,11 +63,13 @@ export default function Ambient() {
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      needsFullClear = true;
     };
     resize();
 
     const target = { x: w * 0.7, y: h * 0.35 };
     const pos = { ...target };
+    const prevPos = { ...target };
     let lastMove = -Infinity;
     let strength = 0.6;
 
@@ -82,7 +85,19 @@ export default function Ambient() {
 
     /* Softly glowing honeycomb around the cursor, with a gentle pulse rippling outward */
     const drawHoneycomb = (t) => {
-      ctx.clearRect(0, 0, w, h);
+      if (needsFullClear) {
+        ctx.clearRect(0, 0, w, h);
+        needsFullClear = false;
+      } else {
+        const pad = RADIUS + 25;
+        const minX = Math.max(0, Math.min(prevPos.x, pos.x) - pad);
+        const minY = Math.max(0, Math.min(prevPos.y, pos.y) - pad);
+        const maxX = Math.min(w, Math.max(prevPos.x, pos.x) + pad);
+        const maxY = Math.min(h, Math.max(prevPos.y, pos.y) + pad);
+        ctx.clearRect(minX, minY, maxX - minX, maxY - minY);
+      }
+      prevPos.x = pos.x;
+      prevPos.y = pos.y;
       const rowH = 1.5 * HEX;
       const colW = SQ3 * HEX;
       const j0 = Math.floor((pos.y - RADIUS) / rowH) - 1;

@@ -47,7 +47,15 @@ export default function Founder() {
         <Reveal className="founder-photo">
           {photoOk ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={founder.photo} alt={`Portrait of ${founder.name}`} onError={() => setPhotoOk(false)} />
+            <img
+              src={founder.photo}
+              alt={`Portrait of ${founder.name}`}
+              width={400}
+              height={400}
+              loading="lazy"
+              decoding="async"
+              onError={() => setPhotoOk(false)}
+            />
           ) : (
             <span className="founder-initials" aria-label={founder.name}>
               {founder.initials}

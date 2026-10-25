@@ -10,10 +10,21 @@ const CONTACT_TO = process.env.CONTACT_TO || 'aurestbiotech@gmail.com';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LIMITS = { name: 120, email: 200, organisation: 160, role: 60, message: 5000 };
 
-// Basic in-memory rate limit: 5 messages per IP per 10 minutes
+// In-memory rate limit with self-pruning: 5 messages per IP per 10 minutes
 const hits = new Map();
+function pruneHits(now) {
+  if (hits.size > 200) {
+    for (const [key, timestamps] of hits.entries()) {
+      const valid = timestamps.filter((t) => now - t < 10 * 60 * 1000);
+      if (valid.length === 0) hits.delete(key);
+      else hits.set(key, valid);
+    }
+  }
+}
+
 function rateLimited(ip) {
   const now = Date.now();
+  pruneHits(now);
   const recent = (hits.get(ip) || []).filter((t) => now - t < 10 * 60 * 1000);
   recent.push(now);
   hits.set(ip, recent);
@@ -21,7 +32,10 @@ function rateLimited(ip) {
 }
 
 const escapeHtml = (s) =>
-  s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+// Strips CR and LF to prevent CRLF email header injection
+const sanitizeHeader = (s) => String(s || '').replace(/[\r\n\x00-\x1f]/g, ' ').trim();
 
 export async function POST(request) {
   let body;
@@ -31,7 +45,7 @@ export async function POST(request) {
     return Response.json({ error: 'Invalid request.' }, { status: 400 });
   }
 
-  // Bots fill the hidden field; pretend success and drop it
+  // Bots fill the hidden honeypot field; pretend success and drop it
   if (body.website) return Response.json({ ok: true });
 
   const data = {};
@@ -42,7 +56,7 @@ export async function POST(request) {
   if (!data.name || !data.email || !data.message) {
     return Response.json({ error: 'Please fill in your name, email and message.' }, { status: 400 });
   }
-  if (!EMAIL_RE.test(data.email)) {
+  if (!EMAIL_RE.test(data.email) || data.email.length > LIMITS.email) {
     return Response.json({ error: 'Please enter a valid email address.' }, { status: 400 });
   }
 
@@ -67,12 +81,16 @@ export async function POST(request) {
     auth: { user: SMTP_USER, pass: SMTP_PASS },
   });
 
-  const subject = `New enquiry from ${data.name}${data.role ? ` (${data.role})` : ''}`;
+  const safeName = sanitizeHeader(data.name);
+  const safeRole = sanitizeHeader(data.role);
+  const safeEmail = sanitizeHeader(data.email);
+  const subject = `New enquiry from ${safeName}${safeRole ? ` (${safeRole})` : ''}`;
+
   const rows = [
-    ['Name', data.name],
-    ['Email', data.email],
+    ['Name', safeName],
+    ['Email', safeEmail],
     ['Organisation', data.organisation || 'Not provided'],
-    ['I am', data.role || 'Not provided'],
+    ['I am', safeRole || 'Not provided'],
   ];
 
   const text = `${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\nMessage:\n${data.message}\n`;
@@ -95,7 +113,7 @@ export async function POST(request) {
     await transporter.sendMail({
       from: `"Aurest Website" <${SMTP_USER}>`,
       to: CONTACT_TO,
-      replyTo: `"${data.name.replace(/"/g, '')}" <${data.email}>`,
+      replyTo: `"${safeName.replace(/"/g, '')}" <${safeEmail}>`,
       subject,
       text,
       html,

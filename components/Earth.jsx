@@ -9,7 +9,7 @@ import {
   atmosphereFragment,
 } from '@/lib/earthShaders';
 
-const TEXTURE_BASE = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/textures/planets/';
+const TEXTURE_BASE = '/textures/';
 
 // Atlantic / Europe / Africa facing the viewer, north tilted toward the horizon
 const BASE_LON = -Math.PI / 2 - THREE.MathUtils.degToRad(2);
@@ -45,8 +45,8 @@ const Earth = forwardRef(function Earth({ onLayout }, ref) {
     // ---- Textures ----
     const loader = new THREE.TextureLoader();
     loader.setCrossOrigin('anonymous');
-    const dayMap = loader.load(`${TEXTURE_BASE}earth_atmos_2048.jpg`);
-    const cloudMap = loader.load(`${TEXTURE_BASE}earth_clouds_1024.png`);
+    const dayMap = loader.load(`${TEXTURE_BASE}earth_atmos_2048.webp`);
+    const cloudMap = loader.load(`${TEXTURE_BASE}earth_clouds_1024.webp`);
     const anisotropy = renderer.capabilities.getMaxAnisotropy();
     dayMap.anisotropy = anisotropy;
     cloudMap.anisotropy = anisotropy;
@@ -62,7 +62,7 @@ const Earth = forwardRef(function Earth({ onLayout }, ref) {
       vertexShader: earthVertex,
       fragmentShader: earthFragment,
     });
-    const earthGeo = new THREE.SphereGeometry(1, 128, 128);
+    const earthGeo = new THREE.SphereGeometry(1, 96, 96);
     const earth = new THREE.Mesh(earthGeo, earthMat);
     earth.rotation.order = 'XYZ';
     earth.rotation.x = TILT;
@@ -76,7 +76,7 @@ const Earth = forwardRef(function Earth({ onLayout }, ref) {
       vertexShader: atmosphereVertex,
       fragmentShader: atmosphereFragment,
     });
-    const atmoGeo = new THREE.SphereGeometry(1.045, 128, 128);
+    const atmoGeo = new THREE.SphereGeometry(1.045, 96, 96);
     const atmosphere = new THREE.Mesh(atmoGeo, atmoMat);
     scene.add(atmosphere);
 
@@ -117,14 +117,26 @@ const Earth = forwardRef(function Earth({ onLayout }, ref) {
     };
     renderer.setAnimationLoop(tick);
 
-    // Pause rendering while the globe is off-screen
+    // Pause rendering while the globe is off-screen or tab is hidden
+    let isVisible = true;
+    const updateLoop = () => {
+      renderer.setAnimationLoop(isVisible && !document.hidden ? tick : null);
+    };
+
     const visibility = new IntersectionObserver(([entry]) => {
-      renderer.setAnimationLoop(entry.isIntersecting ? tick : null);
+      isVisible = entry.isIntersecting;
+      updateLoop();
     });
     visibility.observe(mount);
 
+    const onVisibilityChange = () => {
+      updateLoop();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
     // ---- Cleanup ----
     return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
       visibility.disconnect();
       resizeObserver.disconnect();
       renderer.setAnimationLoop(null);
