@@ -1,4 +1,4 @@
-# Aurest Biotech — Sealing Lives. Healing Futures.™
+# Aurest Biotech  Sealing Lives. Healing Futures.™
 
 Aurest Biotech is a modern web project built around the identity and digital presence of a biotechnology brand.
 
