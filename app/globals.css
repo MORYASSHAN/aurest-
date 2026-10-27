@@ -61,6 +61,8 @@ body {
   font-size: var(--fs-body);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 button {
@@ -188,6 +190,7 @@ button {
   position: relative;
   padding: var(--section-y) var(--pad-x);
   background: transparent;
+  contain: layout style;
 }
 /* Soft white band that lets the blue clouds show at its edges */
 .section-white {

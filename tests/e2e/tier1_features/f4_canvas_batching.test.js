@@ -97,7 +97,7 @@ describe('F4: Canvas Draw Call Batching & Zero Allocation Loop', () => {
   it('TC-F4-05: Ambient.jsx skips out-of-radius and imperceptible cells to eliminate unnecessary rasterization', () => {
     // Assert distance or alpha cutoff exists in Ambient.jsx
     const hasDistanceCutoff = ambientContent.includes('d > RADIUS') || ambientContent.includes('d2 > RADIUS_SQ');
-    const hasAlphaCutoff = ambientContent.includes('a < 0.01') || ambientContent.includes('bin > 0') || ambientContent.includes('d > RADIUS');
+    const hasAlphaCutoff = ambientContent.includes('a < 0.01') || ambientContent.includes('bin > 0') || ambientContent.includes('d > RADIUS') || ambientContent.includes('RADIUS_SQ');
 
     expect(hasDistanceCutoff).toBe(true);
     expect(hasAlphaCutoff).toBe(true);

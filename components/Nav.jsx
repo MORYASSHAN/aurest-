@@ -27,7 +27,10 @@ export default function Nav() {
     const update = () => {
       frame = 0;
       const max = document.documentElement.scrollHeight - window.innerHeight;
-      setOnHero(window.scrollY < window.innerHeight * 0.6);
+      setOnHero((prev) => {
+        const next = window.scrollY < window.innerHeight * 0.6;
+        return prev !== next ? next : prev;
+      });
       if (progressRef.current) {
         progressRef.current.style.transform = `scaleX(${max > 0 ? window.scrollY / max : 0})`;
       }
@@ -37,7 +40,7 @@ export default function Nav() {
     };
     update();
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
+    window.addEventListener('resize', onScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);

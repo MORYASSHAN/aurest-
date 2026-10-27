@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 
 const HEX = 22; // honeycomb cell radius
 const RADIUS = 200; // how far the cursor's influence reaches
+const RADIUS_SQ = RADIUS * RADIUS;
 const SQ3 = Math.sqrt(3);
 const TILT_SELECTOR = '.card, .pillar, .vcard, .partner';
 const MAX_TILT = 7; // degrees
@@ -69,6 +70,7 @@ export default function Ambient() {
     const pos = { ...target };
     let lastMove = -Infinity;
     let strength = 0.6;
+    let lastTilted = null;
 
     const placeGlow = () => {
       glow.style.transform = `translate3d(${pos.x - half}px, ${pos.y - half}px, 0)`;
@@ -95,8 +97,11 @@ export default function Ambient() {
         for (let i = i0; i <= i1; i += 1) {
           const cx = i * colW + offset;
           const cy = j * rowH;
-          const d = Math.hypot(cx - pos.x, cy - pos.y);
-          if (d > RADIUS) continue;
+          const dx = cx - pos.x;
+          const dy = cy - pos.y;
+          const d2 = dx * dx + dy * dy;
+          if (d2 > RADIUS_SQ) continue;
+          const d = Math.sqrt(d2);
 
           const f = 1 - d / RADIUS;
           const e = f * f * (3 - 2 * f); // smooth falloff
@@ -145,7 +150,19 @@ export default function Ambient() {
       // 3D tilt for cards under the cursor
       if (!finePointer) return;
       const el = e.target instanceof Element ? e.target.closest(TILT_SELECTOR) : null;
-      if (!el) return;
+      if (!el) {
+        if (lastTilted) {
+          lastTilted.style.setProperty('--ry', '0deg');
+          lastTilted.style.setProperty('--rx', '0deg');
+          lastTilted = null;
+        }
+        return;
+      }
+      if (lastTilted && lastTilted !== el) {
+        lastTilted.style.setProperty('--ry', '0deg');
+        lastTilted.style.setProperty('--rx', '0deg');
+      }
+      lastTilted = el;
       const r = el.getBoundingClientRect();
       const px = (e.clientX - r.left) / r.width - 0.5;
       const py = (e.clientY - r.top) / r.height - 0.5;

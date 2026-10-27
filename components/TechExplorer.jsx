@@ -51,8 +51,12 @@ export default function TechExplorer({ items }) {
     let frame = 0;
     const update = () => {
       frame = 0;
-      const raw = Math.max(0, -el.getBoundingClientRect().top / (window.innerHeight * STEP));
-      setActive(Math.min(items.length - 1, Math.floor(raw)));
+      const rect = el.getBoundingClientRect();
+      const vh = window.innerHeight;
+      if (rect.bottom < -100 || rect.top > vh + 100) return;
+      const raw = Math.max(0, -rect.top / (vh * STEP));
+      const nextIndex = Math.min(items.length - 1, Math.floor(raw));
+      setActive((prev) => (prev !== nextIndex ? nextIndex : prev));
       const tabs = tabsRef.current?.children ?? [];
       for (let i = 0; i < tabs.length; i += 1) {
         tabs[i].style.setProperty('--fill', Math.min(1, Math.max(0, raw - i)).toFixed(3));

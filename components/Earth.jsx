@@ -160,7 +160,7 @@ const Earth = forwardRef(function Earth({ onLayout }, ref) {
       vertexShader: earthVertex,
       fragmentShader: earthFragment,
     });
-    const earthGeo = new SphereGeometry(1, 96, 96);
+    const earthGeo = new SphereGeometry(1, 72, 72);
     const earth = new Mesh(earthGeo, earthMat);
     earth.rotation.order = 'XYZ';
     earth.rotation.x = TILT;
@@ -174,7 +174,7 @@ const Earth = forwardRef(function Earth({ onLayout }, ref) {
       vertexShader: atmosphereVertex,
       fragmentShader: atmosphereFragment,
     });
-    const atmoGeo = new SphereGeometry(1.045, 96, 96);
+    const atmoGeo = new SphereGeometry(1.045, 72, 72);
     const atmosphere = new Mesh(atmoGeo, atmoMat);
     scene.add(atmosphere);
 

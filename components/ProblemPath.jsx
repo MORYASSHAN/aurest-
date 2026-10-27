@@ -28,6 +28,7 @@ export default function ProblemPath({ intro, nodes, gap, close }) {
       frame = 0;
       const rect = track.getBoundingClientRect();
       const vh = window.innerHeight;
+      if (rect.bottom < -100 || rect.top > vh + 100) return;
       const progress = Math.min(1, Math.max(0, (vh * 0.62 - rect.top) / rect.height));
       track.style.setProperty('--p', progress.toFixed(4));
 

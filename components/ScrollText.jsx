@@ -34,6 +34,7 @@ export default function ScrollText({ as: Tag = 'p', segments, className = '' }) 
       frame = 0;
       const rect = el.getBoundingClientRect();
       const vh = window.innerHeight;
+      if (rect.bottom < -100 || rect.top > vh + 100) return;
       // 0 when the text enters the bottom of the screen, 1 by the time it is centered
       const start = vh * 0.9;
       const distance = vh * 0.45 + rect.height * 0.4;
