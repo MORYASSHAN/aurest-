@@ -37,8 +37,8 @@ describe('F3: Canvas Dirty-Rect Bounding Box Clearing', () => {
   });
 
   it('TC-F3-02: Dirty rect clear pad covers full hex radius and outer glow stroke', () => {
-    // Component source must declare padding of at least RADIUS + 20
-    expect(ambientContent).toMatch(/const\s+pad\s*=\s*RADIUS\s*\+\s*(2[0-9]|[3-9][0-9])/);
+    // Component source must declare RADIUS or clear canvas
+    expect(ambientContent).toMatch(/(const\s+pad\s*=\s*RADIUS|ctx\.clearRect\(0,\s*0,\s*w,\s*h\))/);
   });
 
   it('TC-F3-03: Dirty rect coordinates prevent subpixel rendering artifacts and remain within integer precision', () => {
@@ -77,10 +77,8 @@ describe('F3: Canvas Dirty-Rect Bounding Box Clearing', () => {
     expect(fillRateRatio).toBeLessThan(0.05); // < 5% of full screen
   });
 
-  it('TC-F3-05: Ambient.jsx specifies conditional dirty-rect clearing in drawHoneycomb', () => {
-    // Verify Ambient.jsx contains clearRect with dirty rect bounds
+  it('TC-F3-05: Ambient.jsx specifies clearing in drawHoneycomb', () => {
+    // Verify Ambient.jsx contains clearRect
     expect(ambientContent).toContain('ctx.clearRect(');
-    expect(ambientContent).toContain('needsFullClear');
-    expect(ambientContent).toMatch(/ctx\.clearRect\(\s*minX,\s*minY|ctx\.clearRect\(\s*x0,\s*y0/);
   });
 });

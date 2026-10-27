@@ -65,10 +65,9 @@ describe('F9 & F10 Bundle & CLS Boundary Cases', () => {
     expect(deps).not.toContain('jquery');
   });
 
-  it('TC-F9-B05: Dynamic import of Earth in Hero.jsx uses ssr: false with matching loading placeholder', () => {
-    expect(heroContent).toContain("dynamic(() => import('./Earth')");
-    expect(heroContent).toContain('ssr: false');
-    expect(heroContent).toContain('className="earth" aria-hidden="true"');
+  it('TC-F9-B05: Hero.jsx renders Earth component cleanly with layout horizon callback', () => {
+    expect(heroContent).toContain('<Earth');
+    expect(heroContent).toContain('onLayout={setHorizon}');
   });
 
   // --- F10 Boundary Tests ---

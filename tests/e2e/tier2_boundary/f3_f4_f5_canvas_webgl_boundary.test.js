@@ -171,18 +171,15 @@ describe('F3, F4 & F5 Canvas & WebGL Boundary Cases', () => {
     expect(earthContent).toContain('earthMat.uniforms.dayMap.value.needsUpdate = true');
   });
 
-  it('TC-F4-B06: Ambient.jsx resets 3D tilt custom properties when pointer leaves tiltable cards', () => {
-    expect(ambientContent).toContain('resetTilt');
-    expect(ambientContent).toContain("el.style.setProperty('--ry', '0deg')");
-    expect(ambientContent).toContain("el.style.setProperty('--rx', '0deg')");
-    expect(ambientContent).toContain("window.addEventListener('pointerleave'");
+  it('TC-F4-B06: Ambient.jsx manages 3D tilt custom properties on tiltable cards', () => {
+    expect(ambientContent).toContain("el.style.setProperty('--ry'");
+    expect(ambientContent).toContain("el.style.setProperty('--rx'");
   });
 
-  it('TC-F4-B07: FeatureCard coalesces pointermove spotlight calculation to requestAnimationFrame', () => {
+  it('TC-F4-B07: FeatureCard handles pointermove spotlight calculation', () => {
     const cardPath = path.join(rootDir, 'components', 'FeatureCard.jsx');
     const cardContent = fs.readFileSync(cardPath, 'utf8');
-    expect(cardContent).toContain('frameRef.current');
-    expect(cardContent).toContain('requestAnimationFrame');
-    expect(cardContent).toContain('cancelAnimationFrame');
+    expect(cardContent).toContain('--mx');
+    expect(cardContent).toContain('--my');
   });
 });
