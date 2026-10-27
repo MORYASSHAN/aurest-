@@ -1,16 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import dynamic from 'next/dynamic';
-
-const Earth = dynamic(() => import('./Earth'), {
-  ssr: false,
-  loading: () => <div className="earth" aria-hidden="true" />,
-});
+import Earth from './Earth';
 
 export default function Hero() {
-  // 60% horizon matches the computed desktop resting line ((1 - (-0.2))/2 * 100), eliminating CLS
-  const [horizon, setHorizon] = useState(60);
+  const [horizon, setHorizon] = useState(50);
   const contentRef = useRef(null);
   const earthRef = useRef(null);
 
@@ -45,9 +39,7 @@ export default function Hero() {
 
   return (
     <section id="top" className="hero">
-      <div ref={earthRef} className="earth-parallax">
-        <Earth onLayout={setHorizon} />
-      </div>
+      <Earth ref={earthRef} onLayout={setHorizon} />
 
       <div ref={contentRef} className="hero-content" style={{ height: `${horizon}%` }}>
         <h1 className="brand">AUREST</h1>
@@ -60,4 +52,3 @@ export default function Hero() {
     </section>
   );
 }
-

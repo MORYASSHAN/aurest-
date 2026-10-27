@@ -24,34 +24,23 @@ export default function Nav() {
   // Scroll state + page progress line
   useEffect(() => {
     let frame = 0;
-    let max = 1;
-    const measure = () => {
-      max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-    };
-    measure();
-
     const update = () => {
       frame = 0;
-      const y = window.scrollY;
-      setOnHero(y < window.innerHeight * 0.6);
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      setOnHero(window.scrollY < window.innerHeight * 0.6);
       if (progressRef.current) {
-        progressRef.current.style.transform = `scaleX(${y / max})`;
+        progressRef.current.style.transform = `scaleX(${max > 0 ? window.scrollY / max : 0})`;
       }
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(update);
     };
-    const onResize = () => {
-      measure();
-      if (!frame) frame = requestAnimationFrame(update);
-    };
-
     update();
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onResize);
+    window.addEventListener('resize', onScroll);
     return () => {
       window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onResize);
+      window.removeEventListener('resize', onScroll);
       cancelAnimationFrame(frame);
     };
   }, []);

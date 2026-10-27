@@ -30,39 +30,28 @@ export default function ScrollText({ as: Tag = 'p', segments, className = '' }) 
     }
 
     let frame = 0;
-    let maxScroll = 0;
-    const measure = () => {
-      maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight - 2);
-    };
-    measure();
-
     const update = () => {
       frame = 0;
       const rect = el.getBoundingClientRect();
       const vh = window.innerHeight;
-      if (rect.bottom < -100 || rect.top > vh + 100) return;
-
       // 0 when the text enters the bottom of the screen, 1 by the time it is centered
       const start = vh * 0.9;
       const distance = vh * 0.45 + rect.height * 0.4;
-      const atPageEnd = window.scrollY >= maxScroll;
+      const atPageEnd =
+        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
       const progress = atPageEnd ? 1 : Math.min(1, Math.max(0, (start - rect.top) / distance));
       el.style.setProperty('--p', progress.toFixed(4));
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(update);
     };
-    const onResize = () => {
-      measure();
-      if (!frame) frame = requestAnimationFrame(update);
-    };
 
     update();
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onResize);
+    window.addEventListener('resize', onScroll);
     return () => {
       window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onResize);
+      window.removeEventListener('resize', onScroll);
       cancelAnimationFrame(frame);
     };
   }, []);

@@ -24,40 +24,29 @@ export default function ProblemPath({ intro, nodes, gap, close }) {
     }
 
     let frame = 0;
-    let pointCenters = [];
-    const measurePoints = () => {
-      pointCenters = points.map((el) => el.offsetTop + el.offsetHeight / 2);
-    };
-    measurePoints();
-
     const update = () => {
       frame = 0;
       const rect = track.getBoundingClientRect();
       const vh = window.innerHeight;
-      if (rect.bottom < -100 || rect.top > vh + 100) return;
-
       const progress = Math.min(1, Math.max(0, (vh * 0.62 - rect.top) / rect.height));
       track.style.setProperty('--p', progress.toFixed(4));
 
       const reached = progress * rect.height;
-      for (let i = 0; i < points.length; i += 1) {
-        points[i].classList.toggle('active', reached >= pointCenters[i] - 4);
-      }
+      points.forEach((el) => {
+        const center = el.offsetTop + el.offsetHeight / 2;
+        el.classList.toggle('active', reached >= center - 4);
+      });
     };
     const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(update);
-    };
-    const onResize = () => {
-      measurePoints();
       if (!frame) frame = requestAnimationFrame(update);
     };
 
     update();
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onResize);
+    window.addEventListener('resize', onScroll);
     return () => {
       window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onResize);
+      window.removeEventListener('resize', onScroll);
       cancelAnimationFrame(frame);
     };
   }, []);

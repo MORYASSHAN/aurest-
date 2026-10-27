@@ -3,42 +3,10 @@
 import { useEffect, useRef } from 'react';
 
 const HEX = 22; // honeycomb cell radius
-const HEX_R = HEX - 2; // 20
 const RADIUS = 200; // how far the cursor's influence reaches
-const RADIUS_SQ = RADIUS * RADIUS; // 40000
 const SQ3 = Math.sqrt(3);
-const ROW_H = 1.5 * HEX;
-const COL_W = SQ3 * HEX;
 const TILT_SELECTOR = '.card, .pillar, .vcard, .partner';
 const MAX_TILT = 7; // degrees
-
-// Precomputed 6 hexagon vertex offsets (zero trig calls in loop)
-const HEX_DX = [
-  HEX_R * (SQ3 / 2),
-  HEX_R * (SQ3 / 2),
-  0,
-  -HEX_R * (SQ3 / 2),
-  -HEX_R * (SQ3 / 2),
-  0,
-];
-const HEX_DY = [
-  -HEX_R * 0.5,
-  HEX_R * 0.5,
-  HEX_R,
-  HEX_R * 0.5,
-  -HEX_R * 0.5,
-  -HEX_R,
-];
-
-// Precomputed opacity lookup tables (16 bins, zero string allocations)
-const NUM_BINS = 16;
-const STROKE_WIDE = new Array(NUM_BINS);
-const STROKE_THIN = new Array(NUM_BINS);
-for (let b = 0; b < NUM_BINS; b += 1) {
-  const normA = b / (NUM_BINS - 1);
-  STROKE_WIDE[b] = `rgba(110, 180, 250, ${(normA * 0.14).toFixed(3)})`;
-  STROKE_THIN[b] = `rgba(70, 145, 225, ${(normA * 0.45).toFixed(3)})`;
-}
 
 /** A small molecule outline: a hexagon ring with a couple of bonded atoms. */
 function Molecule({ className }) {
@@ -87,7 +55,6 @@ export default function Ambient() {
     let w = 0;
     let h = 0;
     let half = 320; // half the glow size, read from CSS
-    let needsFullClear = true;
     const resize = () => {
       w = window.innerWidth;
       h = window.innerHeight;
@@ -95,13 +62,11 @@ export default function Ambient() {
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      needsFullClear = true;
     };
     resize();
 
     const target = { x: w * 0.7, y: h * 0.35 };
     const pos = { ...target };
-    const prevPos = { ...target };
     let lastMove = -Infinity;
     let strength = 0.6;
 
@@ -115,87 +80,38 @@ export default function Ambient() {
       return () => window.removeEventListener('resize', resize);
     }
 
-    // Preallocated bucket coordinate buffers (zero allocation in loop)
-    const bins = Array.from({ length: NUM_BINS }, () => []);
-
     /* Softly glowing honeycomb around the cursor, with a gentle pulse rippling outward */
     const drawHoneycomb = (t) => {
-      if (needsFullClear) {
-        ctx.clearRect(0, 0, w, h);
-        needsFullClear = false;
-      } else {
-        const pad = RADIUS + 26;
-        const minX = Math.max(0, Math.min(w, Math.floor(Math.min(prevPos.x, pos.x) - pad)));
-        const minY = Math.max(0, Math.min(h, Math.floor(Math.min(prevPos.y, pos.y) - pad)));
-        const maxX = Math.max(0, Math.min(w, Math.ceil(Math.max(prevPos.x, pos.x) + pad)));
-        const maxY = Math.max(0, Math.min(h, Math.ceil(Math.max(prevPos.y, pos.y) + pad)));
-        const clearW = maxX - minX;
-        const clearH = maxY - minY;
-        if (clearW > 0 && clearH > 0) {
-          ctx.clearRect(minX, minY, clearW, clearH);
-        }
-      }
-      prevPos.x = pos.x;
-      prevPos.y = pos.y;
-
-      // Clear bucket lists without allocating memory
-      for (let b = 1; b < NUM_BINS; b += 1) {
-        bins[b].length = 0;
-      }
-
-      const j0 = Math.floor((pos.y - RADIUS) / ROW_H) - 1;
-      const j1 = Math.ceil((pos.y + RADIUS) / ROW_H) + 1;
+      ctx.clearRect(0, 0, w, h);
+      const rowH = 1.5 * HEX;
+      const colW = SQ3 * HEX;
+      const j0 = Math.floor((pos.y - RADIUS) / rowH) - 1;
+      const j1 = Math.ceil((pos.y + RADIUS) / rowH) + 1;
 
       for (let j = j0; j <= j1; j += 1) {
-        const offset = j & 1 ? COL_W / 2 : 0;
-        const i0 = Math.floor((pos.x - RADIUS - offset) / COL_W) - 1;
-        const i1 = Math.ceil((pos.x + RADIUS - offset) / COL_W) + 1;
+        const offset = j & 1 ? colW / 2 : 0;
+        const i0 = Math.floor((pos.x - RADIUS - offset) / colW) - 1;
+        const i1 = Math.ceil((pos.x + RADIUS - offset) / colW) + 1;
         for (let i = i0; i <= i1; i += 1) {
-          const cx = i * COL_W + offset;
-          const cy = j * ROW_H;
-          const dx = cx - pos.x;
-          const dy = cy - pos.y;
-          const d2 = dx * dx + dy * dy;
-          if (d2 > RADIUS_SQ) continue;
+          const cx = i * colW + offset;
+          const cy = j * rowH;
+          const d = Math.hypot(cx - pos.x, cy - pos.y);
+          if (d > RADIUS) continue;
 
-          const d = Math.sqrt(d2);
           const f = 1 - d / RADIUS;
           const e = f * f * (3 - 2 * f); // smooth falloff
           const wave = 0.6 + 0.4 * Math.sin(d * 0.045 - t * 0.0035);
           const a = e * wave * strength;
-          const bin = Math.min(NUM_BINS - 1, Math.max(0, Math.round(a * (NUM_BINS - 1))));
-          if (bin > 0) {
-            bins[bin].push(cx, cy);
-          }
+
+          hexPath(ctx, cx, cy, HEX - 2);
+          // soft wide stroke + thin stroke = a gentle blue glow
+          ctx.lineWidth = 5;
+          ctx.strokeStyle = `rgba(110, 180, 250, ${(a * 0.14).toFixed(3)})`;
+          ctx.stroke();
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = `rgba(70, 145, 225, ${(a * 0.45).toFixed(3)})`;
+          ctx.stroke();
         }
-      }
-
-      // Batch-draw by opacity bin: at most 15 path batches and 30 stroke calls
-      for (let b = 1; b < NUM_BINS; b += 1) {
-        const pts = bins[b];
-        const len = pts.length;
-        if (len === 0) continue;
-
-        ctx.beginPath();
-        for (let k = 0; k < len; k += 2) {
-          const hx = pts[k];
-          const hy = pts[k + 1];
-          ctx.moveTo(hx + HEX_DX[0], hy + HEX_DY[0]);
-          ctx.lineTo(hx + HEX_DX[1], hy + HEX_DY[1]);
-          ctx.lineTo(hx + HEX_DX[2], hy + HEX_DY[2]);
-          ctx.lineTo(hx + HEX_DX[3], hy + HEX_DY[3]);
-          ctx.lineTo(hx + HEX_DX[4], hy + HEX_DY[4]);
-          ctx.lineTo(hx + HEX_DX[5], hy + HEX_DY[5]);
-          ctx.closePath();
-        }
-
-        // soft wide stroke + thin stroke = a gentle blue glow
-        ctx.lineWidth = 5;
-        ctx.strokeStyle = STROKE_WIDE[b];
-        ctx.stroke();
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = STROKE_THIN[b];
-        ctx.stroke();
       }
     };
 
@@ -219,26 +135,6 @@ export default function Ambient() {
       drawHoneycomb(t);
     };
 
-    let lastTilted = null;
-    let pendingTilt = null;
-    let tiltFrame = 0;
-    const applyTilt = () => {
-      tiltFrame = 0;
-      if (!pendingTilt) return;
-      const { el, clientX, clientY } = pendingTilt;
-      const r = el.getBoundingClientRect();
-      const px = (clientX - r.left) / r.width - 0.5;
-      const py = (clientY - r.top) / r.height - 0.5;
-      el.style.setProperty('--ry', `${(px * MAX_TILT * 2).toFixed(2)}deg`);
-      el.style.setProperty('--rx', `${(-py * MAX_TILT * 2).toFixed(2)}deg`);
-    };
-
-    const resetTilt = (el) => {
-      if (!el) return;
-      el.style.setProperty('--ry', '0deg');
-      el.style.setProperty('--rx', '0deg');
-    };
-
     const onPointerMove = (e) => {
       if (e.pointerType === 'mouse' || e.pointerType === 'pen') {
         target.x = e.clientX;
@@ -246,51 +142,30 @@ export default function Ambient() {
         lastMove = performance.now();
       }
 
-      // 3D tilt for cards under the cursor - coalesced to RAF to eliminate mouse polling jank
+      // 3D tilt for cards under the cursor
       if (!finePointer) return;
       const el = e.target instanceof Element ? e.target.closest(TILT_SELECTOR) : null;
-      if (el) {
-        if (lastTilted && lastTilted !== el) {
-          resetTilt(lastTilted);
-        }
-        lastTilted = el;
-        pendingTilt = { el, clientX: e.clientX, clientY: e.clientY };
-        if (!tiltFrame) tiltFrame = requestAnimationFrame(applyTilt);
-      } else if (lastTilted) {
-        resetTilt(lastTilted);
-        lastTilted = null;
-        pendingTilt = null;
-      }
-    };
-
-    const onPointerLeave = () => {
-      if (lastTilted) {
-        resetTilt(lastTilted);
-        lastTilted = null;
-        pendingTilt = null;
-      }
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width - 0.5;
+      const py = (e.clientY - r.top) / r.height - 0.5;
+      el.style.setProperty('--ry', `${(px * MAX_TILT * 2).toFixed(2)}deg`);
+      el.style.setProperty('--rx', `${(-py * MAX_TILT * 2).toFixed(2)}deg`);
     };
 
     const onVisibility = () => {
       cancelAnimationFrame(frame);
-      if (tiltFrame) cancelAnimationFrame(tiltFrame);
-      if (!document.hidden) {
-        needsFullClear = true;
-        frame = requestAnimationFrame(loop);
-      }
+      if (!document.hidden) frame = requestAnimationFrame(loop);
     };
 
     frame = requestAnimationFrame(loop);
     window.addEventListener('resize', resize);
     window.addEventListener('pointermove', onPointerMove, { passive: true });
-    window.addEventListener('pointerleave', onPointerLeave, { passive: true });
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
       cancelAnimationFrame(frame);
-      if (tiltFrame) cancelAnimationFrame(tiltFrame);
       window.removeEventListener('resize', resize);
       window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerleave', onPointerLeave);
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, []);

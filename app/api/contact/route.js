@@ -12,17 +12,19 @@ const LIMITS = { name: 120, email: 200, organisation: 160, role: 60, message: 50
 const MAX_PAYLOAD_BYTES = 64 * 1024; // 64 KB max payload to prevent DoS
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 const MAX_REQUESTS_PER_WINDOW = 5;
+const MAX_TRACKED_IPS = 1000;
 
-// In-memory rate limit with self-pruning
+// In-memory rate limit with self-pruning and bounded capacity
 const hits = new Map();
 
 function pruneHits(now) {
-  if (hits.size > 150) {
-    for (const [key, timestamps] of hits.entries()) {
-      const valid = timestamps.filter((t) => now - t < RATE_WINDOW_MS);
-      if (valid.length === 0) hits.delete(key);
-      else hits.set(key, valid);
-    }
+  for (const [key, timestamps] of hits.entries()) {
+    const valid = timestamps.filter((t) => now - t < RATE_WINDOW_MS);
+    if (valid.length === 0) hits.delete(key);
+    else hits.set(key, valid);
+  }
+  while (hits.size > MAX_TRACKED_IPS) {
+    hits.delete(hits.keys().next().value);
   }
 }
 
@@ -35,6 +37,9 @@ function rateLimited(ip) {
   }
   recent.push(now);
   hits.set(ip, recent);
+  if (hits.size > MAX_TRACKED_IPS) {
+    hits.delete(hits.keys().next().value);
+  }
   return false;
 }
 
@@ -45,7 +50,7 @@ const escapeHtml = (s) =>
 const sanitizeHeader = (s) => String(s || '').replace(/[\r\n\x00-\x1f]/g, ' ').trim();
 
 // Strip brackets and quotes for header addresses
-const sanitizeAddressPart = (s) => sanitizeHeader(s).replace(/[<>"']/g, '');
+const sanitizeAddressPart = (s) => sanitizeHeader(s).replace(/[<>"']/g, '').trim();
 
 const jsonResponse = (data, status = 200) =>
   Response.json(data, {
@@ -130,13 +135,14 @@ export async function POST(request) {
 
   const safeName = sanitizeAddressPart(data.name);
   const safeRole = sanitizeHeader(data.role);
+  const safeOrg = sanitizeHeader(data.organisation);
   const safeEmail = sanitizeAddressPart(data.email);
   const subject = `New enquiry from ${safeName}${safeRole ? ` (${safeRole})` : ''}`;
 
   const rows = [
     ['Name', safeName],
     ['Email', safeEmail],
-    ['Organisation', sanitizeHeader(data.organisation) || 'Not provided'],
+    ['Organisation', safeOrg || 'Not provided'],
     ['I am', safeRole || 'Not provided'],
   ];
 

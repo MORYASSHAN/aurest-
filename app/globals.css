@@ -108,16 +108,17 @@ button {
   pointer-events: none;
 }
 
-.earth,
-.earth-parallax {
+.earth {
   position: absolute;
   inset: 0;
   will-change: transform;
+  pointer-events: none;
 }
 .earth canvas {
   display: block;
   width: 100%;
   height: 100%;
+  pointer-events: none;
 }
 
 .hero-content {
@@ -135,6 +136,9 @@ button {
   text-align: center;
   pointer-events: none;
   will-change: transform, opacity;
+}
+.hero-content > * {
+  pointer-events: auto;
 }
 
 .brand {
